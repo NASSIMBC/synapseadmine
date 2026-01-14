@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>SYNAPSE - Panel Direction</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+    <nav class="bg-black text-white p-4 shadow-xl">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-black">SYNAPSE <span class="text-yellow-400">ADMIN</span></h1>
+            <div id="admin-info" class="text-xs font-mono"></div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-yellow-500"></i> Demandes de Boost en attente
+                </h2>
+                <div id="requests-list" class="space-y-4">
+                    </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                <h2 class="text-lg font-bold mb-4">Aperçu Global</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-xl">
+                        <p class="text-xs text-gray-400 uppercase">Annonces Boostées</p>
+                        <p id="total-boosted" class="text-2xl font-black">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialisation Supabase (Mets tes clés ici)
+        const supabase = supabase.createClient('URL', 'KEY');
+
+        async function loadRequests() {
+            // On cherche les annonces avec le tag secret que nous avons défini
+            const { data, error } = await supabase
+                .from('products')
+                .select('*')
+                .ilike('description', '%[DEMANDE BOOST EN COURS]%');
+
+            const list = document.getElementById('requests-list');
+            list.innerHTML = '';
+
+            data.forEach(p => {
+                list.innerHTML += `
+                    <div class="p-4 border rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <img src="${p.image_url}" class="w-12 h-12 rounded object-cover">
+                            <div>
+                                <p class="font-bold text-sm">${p.title}</p>
+                                <p class="text-xs text-yellow-600 font-bold">${p.price} DA</p>
+                            </div>
+                        </div>
+                        <button onclick="approve('${p.id}', '${p.description}')" class="bg-black text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-yellow-400 hover:text-black transition">
+                            ACTIVER LE BOOST
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        async function approve(id, oldDesc) {
+            const newDesc = oldDesc.replace('[DEMANDE BOOST EN COURS] ', '');
+            const { error } = await supabase
+                .from('products')
+                .update({ is_boosted: true, description: newDesc })
+                .eq('id', id);
+
+            if(!error) {
+                alert("Boost Activé !");
+                loadRequests();
+            }
+        }
+
+        loadRequests();
+    </script>
+</body>
+</html> 
